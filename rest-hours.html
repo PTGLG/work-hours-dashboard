@@ -30,6 +30,7 @@ tbody tr:nth-child(even) td{background:#fafcfb}tr:hover td{background:#f0f6f2!im
 .pass{color:var(--ok);font-weight:700}.fail{color:var(--red);font-weight:700}
 .warn{background:#fff;color:var(--mut);border:1px solid var(--line);border-left:4px solid var(--g7);padding:9px 14px;border-radius:8px;font-size:12.5px;margin-bottom:16px;line-height:1.8;overflow-wrap:anywhere}
 .mini{padding:4px 10px;font-size:12px;border:1px solid var(--line);margin-right:6px}
+.mini.del{color:var(--red);border-color:#f0c9c9}.mini.del:hover{background:#fdecec}
 .tag{display:inline-block;font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:999px;padding:2px 8px;margin-right:6px}
 dialog{border:0;border-radius:12px;padding:22px 24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(15,61,36,.35);font-family:inherit;color:var(--ink)}
 dialog::backdrop{background:rgba(15,35,26,.45)}
@@ -43,7 +44,7 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 #editErr{min-height:18px;font-size:12.5px;margin-bottom:6px}
 .dt{display:flex;gap:8px}.dt input{width:auto;min-width:0;margin-top:5px}.dt input:first-child{flex:3}.dt input:last-child{flex:2}
 .outline{border:1px solid var(--g7)}
-#listDlg{width:min(980px,95vw)}#listDlg .wrap{max-height:55vh;margin-bottom:12px}
+#listDlg,#delDlg{width:min(980px,95vw)}#listDlg .wrap,#delDlg .wrap{max-height:55vh;margin-bottom:12px}
 #logDlg{width:min(1100px,96vw)}#logDlg .wrap{max-height:55vh;margin-bottom:12px}#logDlg .controls{margin-bottom:10px;align-items:center}
 #logDlg input{width:230px;margin-top:0}#logDlg td.reason{white-space:normal;min-width:260px}#logInfo{color:var(--mut);font-size:12.5px}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}}
@@ -69,6 +70,7 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 <select id="status"><option value="all">เวลาพัก: ทั้งหมด</option><option value="ผ่าน">พักผ่าน</option><option value="ไม่ผ่าน">พักไม่ผ่าน</option></select>
 <select id="sortWork"><option value="default">เรียงลำดับ: ตามชื่อ/เวลา</option><option value="desc">ชั่วโมงทำงาน มาก → น้อย</option><option value="asc">ชั่วโมงทำงาน น้อย → มาก</option></select>
 <button type="button" id="viewEdited" class="outline">ดูรายการที่แก้ไข (<span id="editedCount">0</span>)</button>
+<button type="button" id="viewDeleted" class="outline">ดูรายการที่ลบ (<span id="delCount">0</span>)</button>
 <button type="button" id="viewLog" class="outline">Log วันที่/เวลาไม่ถูกต้อง (<span id="logCount">0</span>)</button></div>
 <div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เริ่มงาน</th><th>จบงาน</th><th id="thWork" style="cursor:pointer" title="คลิกเพื่อเรียงลำดับ">ชั่วโมงทำงาน <span id="sortArrow"></span></th><th>สถานะทำงาน</th><th>พักก่อนงานถัดไป</th><th>สถานะพัก</th><th>จัดการ</th></tr></thead>
 <tbody id="workRows"><tr><td colspan="10">กำลังโหลดข้อมูล...</td></tr></tbody></table></div></div>
@@ -83,8 +85,12 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 <div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เวลาเดิม</th><th>เวลาที่แก้ไข</th><th>ชั่วโมงทำงานใหม่</th><th>จัดการ</th></tr></thead>
 <tbody id="editedRows"></tbody></table></div>
 <div class="actions"><button type="button" id="listClose">ปิด</button></div></dialog>
+<dialog id="delDlg"><h3>รายการที่ลบ</h3><p>รายการเหล่านี้ไม่ถูกนำมาคำนวณ (เช่น รูดบัตรเฉยๆ ไม่ได้วิ่งงานจริง) กด "คืนรายการ" เพื่อนำกลับมาคำนวณ</p>
+<div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เริ่มงาน</th><th>จบงาน</th><th>ชั่วโมงทำงาน</th><th>จัดการ</th></tr></thead>
+<tbody id="delRows"></tbody></table></div>
+<div class="actions"><button type="button" id="delClose">ปิด</button></div></dialog>
 <dialog id="logDlg"><h3>Log ข้อมูลที่ถูกข้าม</h3><p>ดูว่าแถวไหนในชีตไม่ถูกนำมาคำนวณ และเพราะอะไร "แถวในชีต" คือเลขแถวใน Google Sheets (แถวที่ 1 คือหัวตาราง) ส่วนค่าที่แสดงเป็นค่าเดิมตามที่อ่านได้จากชีต</p>
-<div class="controls"><select id="logType"><option value="invalid">วันที่/เวลาไม่ถูกต้อง</option><option value="missing">ไม่มีคู่เวลาเริ่ม/จบ</option><option value="incomplete">คู่เวลาไม่ครบ</option><option value="nodriver">ไม่มีชื่อ พขร.</option><option value="all">ทุกประเภท</option></select>
+<div class="controls"><select id="logType"><option value="invalid">วันที่/เวลาไม่ถูกต้อง</option><option value="missing">ไม่มีคู่เวลาเริ่ม/จบ</option><option value="incomplete">คู่เวลาไม่ครบ</option><option value="nodriver">ไม่มีชื่อ พขร.</option><option value="all">ทุกประเภท</option><option value="deleted">รายการที่ลบแล้ว</option></select>
 <input id="logSearch" placeholder="ค้นหาชื่อ พขร. หรือเลขแถว" autocomplete="off">
 <button type="button" id="logDownload" class="outline">ดาวน์โหลด CSV</button><span id="logInfo"></span></div>
 <div class="wrap"><table><thead><tr><th>แถวในชีต</th><th>พขร.</th><th>สาขา</th><th>Date (ค่าเดิม)</th><th>แหล่งเวลา</th><th>เวลาเริ่ม (ค่าเดิม)</th><th>เวลาจบ (ค่าเดิม)</th><th>สาเหตุ</th><th>จัดการ</th></tr></thead>
@@ -99,7 +105,7 @@ selectedStart:["เวลาเริ่มที่เลือก"],selectedEn
 famulaStart:["เริ่ม Famula","เริ่มงาน Famula"],famulaEnd:["จบ Famula","จบงาน Famula"]};
 const REST_LIMIT_MS=10*3600*1000;
 const WORK_LIMIT_MS=14*3600*1000;
-let records=[],restRows=[],logRows=[],loading=false;
+let records=[],restRows=[],logRows=[],deletedRecs=[],loading=false;
 function parseCSV(text){const rows=[],nums=[];let row=[],cell="",quoted=false,rowNo=1;text=text.replace(/^\uFEFF/,"");
 for(let i=0;i<text.length;i++){const c=text[i],next=text[i+1];
 if(c==='"'&&quoted&&next==='"'){cell+='"';i++}else if(c==='"')quoted=!quoted;
@@ -174,7 +180,11 @@ records=nr;
 records.forEach(r=>{r.origStart=r.start;r.origEnd=r.end;r.key=[r.driver,r.source,r.origStart.getTime(),r.origEnd.getTime()].join("|")});
 let ovrNote="";
 try{await refreshOverrides()}catch(e){overrides=loadLocal();ovrNote=" | โหลดค่าที่แก้ไขจากชีตไม่สำเร็จ ("+e.message+") ใช้ค่าในเบราว์เซอร์แทน"}
-applyManual();applyOverrides();computeRest();
+applyManual();applyOverrides();
+deletedRecs=[];records=records.filter(r=>{if(overrides[DEL+r.key]){deletedRecs.push(r);return false}return true});
+deletedRecs.forEach(r=>{if(r.manual){const l=logRows.find(x=>x.key===r.key);if(l){l.fixed=false;l.deleted=true}}});
+logRows.forEach(l=>{if(l.key&&overrides[DEL+l.key])l.deleted=true});
+computeRest();
 updateBranches();render();
 const latest=records.reduce((m,r)=>(!m||r.end>m)?r.end:m,null);
 message.textContent=latest?"ข้อมูลอัปเดตถึงวันที่ "+fmtDate(latest)+" เวลา "+fmtTime(latest)+" น.":"ไม่พบข้อมูลงาน";
@@ -192,6 +202,7 @@ restRows.push({driver:c.driver,branch:n.branch||c.branch,previousEnd:c.end,nextS
 const API_URL="https://script.google.com/macros/s/AKfycbwfvwpMvzuvHAbaqMsTlurEhp4u8HCEvI5190yHc8J5TyOxhV6fd4WHR7T-_M9YDQQX/exec";   /* วางลิงก์ Web app (ลงท้ายด้วย /exec) จาก Apps Script ที่นี่ */
 const API_TOKEN="PTGLG2026"; /* ต้องตรงกับ TOKEN ใน Apps Script */
 const OVR_KEY="restHoursOverrides.v1";
+const DEL="del|"; /* คีย์นำหน้าสำหรับรายการที่ลบ เก็บในชีตแก้ไขเดิม */
 let overrides={};
 function loadLocal(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")||{}}catch(e){return{}}}
 function saveLocal(o){try{localStorage.setItem(OVR_KEY,JSON.stringify(o));return true}catch(e){return false}}
@@ -210,7 +221,7 @@ const j=await res.json();if(!j.ok)throw new Error(j.error||"unknown")}
 else{const o=loadLocal();if(val)o[r.key]=val;else delete o[r.key];
 if(!saveLocal(o))throw new Error("เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล")}
 if(val)overrides[r.key]=val;else delete overrides[r.key]}
-function applyManual(){logRows.forEach(l=>{l.fixed=false;if(!l.key)return;const v=overrides[l.key];
+function applyManual(){logRows.forEach(l=>{l.fixed=false;l.deleted=false;if(!l.key)return;const v=overrides[l.key];
 if(v&&v.start&&v.end&&v.end>v.start){l.fixed=true;
 records.push({driver:l.driver,branch:l.branch,start:new Date(v.start),end:new Date(v.end),source:l.source||"แก้ไขเอง",rowNumber:l.row,
 manual:true,key:l.key,origStart:new Date(v.start),origEnd:new Date(v.end),manualOrig:(l.startRaw||"-")+" – "+(l.endRaw||"-")})}})}
@@ -242,6 +253,32 @@ try{await persistOverride(r,null)}catch(ex){alert("คืนค่าไม่�
 if(r.manual){const ix=records.indexOf(r);if(ix>=0)records.splice(ix,1);const l=logRows.find(x=>x.key===r.key);if(l)l.fixed=false}
 else{r.start=r.origStart;r.end=r.origEnd;r.edited=false}
 computeRest();render()}
+async function deleteRec(r){
+if(!confirm("ลบรายการนี้ออกจากการคำนวณ?\n"+r.driver+" · "+dateText(r.start)+" – "+dateText(r.end)+"\n(กู้คืนได้ที่ปุ่ม \"ดูรายการที่ลบ\")"))return;
+try{await persistOverride({key:DEL+r.key,driver:r.driver,source:r.source},{start:1,end:2})}catch(ex){alert("ลบไม่สำเร็จ: "+ex.message);return}
+const ix=records.indexOf(r);if(ix>=0)records.splice(ix,1);deletedRecs.push(r);
+if(r.manual){const l=logRows.find(x=>x.key===r.key);if(l){l.fixed=false;l.deleted=true}}
+computeRest();render();if(document.getElementById("logDlg").open)renderLog()}
+async function deleteLog(l){
+if(!confirm("ลบรายการนี้ออกจาก Log?\n"+(l.driver||"-")+" · แถวที่ "+l.row+"\n(กู้คืนได้ที่ตัวกรอง \"รายการที่ลบแล้ว\" ใน Log)"))return;
+try{await persistOverride({key:DEL+l.key,driver:l.driver,source:l.source},{start:1,end:2})}catch(ex){alert("ลบไม่สำเร็จ: "+ex.message);return}
+l.deleted=true;render()}
+async function restoreLog(l){
+try{await persistOverride({key:DEL+l.key,driver:l.driver,source:l.source},null)}catch(ex){alert("กู้คืนไม่สำเร็จ: "+ex.message);return}
+l.deleted=false;render()}
+async function restoreRec(r){
+try{await persistOverride({key:DEL+r.key,driver:r.driver,source:r.source},null)}catch(ex){alert("กู้คืนไม่สำเร็จ: "+ex.message);return}
+const ix=deletedRecs.indexOf(r);if(ix>=0)deletedRecs.splice(ix,1);records.push(r);
+if(r.manual){const l=logRows.find(x=>x.key===r.key);if(l){l.fixed=true;l.deleted=false}}
+computeRest();render();if(document.getElementById("logDlg").open)renderLog()}
+function renderDeleted(){const tb=document.getElementById("delRows");tb.innerHTML="";
+if(!deletedRecs.length){emptyRow(tb,7);tb.querySelector("td").textContent="ยังไม่มีรายการที่ลบ";return}
+deletedRecs.slice().sort((a,b)=>a.driver.localeCompare(b.driver,"th")||a.start-b.start).forEach(r=>{const tr=document.createElement("tr");
+[r.driver,r.branch||"-",r.source,dateText(r.start),dateText(r.end),duration(r.end-r.start)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});
+const act=document.createElement("td"),b=document.createElement("button");b.type="button";b.className="mini";b.textContent="คืนรายการ";
+b.addEventListener("click",async()=>{await restoreRec(r);renderDeleted()});act.appendChild(b);tr.appendChild(act);tb.appendChild(tr)})}
+document.getElementById("viewDeleted").addEventListener("click",()=>{renderDeleted();document.getElementById("delDlg").showModal()});
+document.getElementById("delClose").addEventListener("click",()=>document.getElementById("delDlg").close());
 document.getElementById("editCancel").addEventListener("click",()=>document.getElementById("editDlg").close());
 document.getElementById("editForm").addEventListener("submit",async e=>{e.preventDefault();
 const err=document.getElementById("editErr"),s=readDT("editStart"),en=readDT("editEnd");
@@ -272,7 +309,8 @@ document.getElementById("drivers").textContent=drivers.size;document.getElementB
 document.getElementById("rate").textContent=(restRows.length?Math.round(passed/restRows.length*100):0)+"%";
 document.getElementById("jobs").textContent=records.length;document.getElementById("over").textContent=overCount;
 document.getElementById("editedCount").textContent=records.filter(r=>r.edited).length;
-document.getElementById("logCount").textContent=logRows.filter(l=>l.type==="invalid"&&!l.fixed).length;
+document.getElementById("delCount").textContent=deletedRecs.length;
+document.getElementById("logCount").textContent=logRows.filter(l=>l.type==="invalid"&&!l.fixed&&!l.deleted).length;
 const works=records.filter(r=>{const over=(r.end-r.start)>WORK_LIMIT_MS;
 return r.driver.toLowerCase().includes(search)&&(branch==="all"||r.branch===branch)
 &&(workStatus==="all"||(workStatus==="over"?over:!over))&&(status==="all"||r.restStatus===status)});
@@ -292,6 +330,7 @@ if(i===8&&hasRest)td.className=r.restStatus==="ผ่าน"?"pass":"fail";
 tr.appendChild(td)});
 const act=document.createElement("td");
 const eb=document.createElement("button");eb.type="button";eb.className="mini";eb.textContent="แก้ไข";eb.addEventListener("click",()=>openEdit(r));act.appendChild(eb);
+const db=document.createElement("button");db.type="button";db.className="mini del";db.textContent="ลบ";db.addEventListener("click",()=>deleteRec(r));act.appendChild(db);
 if(r.edited){const tag=document.createElement("span");tag.className="tag";tag.textContent="แก้ไขแล้ว";act.appendChild(tag);
 const rb=document.createElement("button");rb.type="button";rb.className="mini";rb.textContent="คืนค่า";rb.addEventListener("click",()=>resetEdit(r));act.appendChild(rb)}
 tr.appendChild(act);
@@ -316,20 +355,24 @@ document.getElementById("branch").addEventListener("change",render);
 const LOG_TYPES={invalid:"วันที่/เวลาไม่ถูกต้อง",missing:"ไม่มีคู่เวลาเริ่ม/จบ",incomplete:"คู่เวลาไม่ครบ",nodriver:"ไม่มีชื่อ พขร."};
 function filteredLog(){const t=document.getElementById("logType").value,q=document.getElementById("logSearch").value.trim().toLowerCase();
 const fixedRows=new Set(logRows.filter(l=>l.fixed).map(l=>l.row));
-return logRows.filter(l=>!(l.type==="missing"&&fixedRows.has(l.row))&&(t==="all"||l.type===t)&&(!q||l.driver.toLowerCase().includes(q)||String(l.row)===q))}
+return logRows.filter(l=>!(l.type==="missing"&&fixedRows.has(l.row))&&(t==="deleted"?l.deleted:(!l.deleted&&(t==="all"||l.type===t)))&&(!q||l.driver.toLowerCase().includes(q)||String(l.row)===q))}
 function renderLog(){const tb=document.getElementById("logRows");tb.innerHTML="";const list=filteredLog();
-document.getElementById("logInfo").textContent="แสดง "+list.length+" จากทั้งหมด "+logRows.length+" รายการ";
+document.getElementById("logInfo").textContent="แสดง "+list.length+" จากทั้งหมด "+(document.getElementById("logType").value==="deleted"?logRows.filter(l=>l.deleted):logRows.filter(l=>!l.deleted)).length+" รายการ";
 if(!list.length){emptyRow(tb,9);tb.querySelector("td").textContent="ไม่พบรายการ";return}
 list.forEach(l=>{const tr=document.createElement("tr"),rec=l.fixed?records.find(r=>r.manual&&r.key===l.key):null;
-const reason=rec?"แก้ไขแล้ว: "+dateText(rec.start)+" – "+dateText(rec.end):l.reason;
+const reason=rec?"แก้ไขแล้ว: "+dateText(rec.start)+" – "+dateText(rec.end):(l.deleted?"ลบแล้ว (ไม่นับเป็นงาน)":l.reason);
 [l.row,l.driver||"-",l.branch||"-",l.dateRaw||"-",l.source||"-",l.startRaw||"-",l.endRaw||"-",reason].forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;
 if(i===7)td.className=rec?"reason pass":l.type==="invalid"?"reason fail":"reason";tr.appendChild(td)});
 const act=document.createElement("td");
-if(l.key){const b=document.createElement("button");b.type="button";b.className="mini";
+if(l.deleted){const b=document.createElement("button");b.type="button";b.className="mini";b.textContent="คืนรายการ";
+b.addEventListener("click",async()=>{const dr=deletedRecs.find(r=>r.manual&&r.key===l.key);if(dr)await restoreRec(dr);else await restoreLog(l);renderLog()});act.appendChild(b)}
+else if(l.key){const b=document.createElement("button");b.type="button";b.className="mini";
 if(rec){b.textContent="แก้ไขอีกครั้ง";b.addEventListener("click",()=>openEdit(rec));act.appendChild(b);
 const rb=document.createElement("button");rb.type="button";rb.className="mini";rb.textContent="คืนค่า";
 rb.addEventListener("click",async()=>{await resetEdit(rec);renderLog()});act.appendChild(rb)}
-else{b.textContent="แก้ไข";b.addEventListener("click",()=>openManual(l));act.appendChild(b)}}
+else{b.textContent="แก้ไข";b.addEventListener("click",()=>openManual(l));act.appendChild(b)}
+const xb=document.createElement("button");xb.type="button";xb.className="mini del";xb.textContent="ลบ";
+xb.addEventListener("click",async()=>{if(rec)await deleteRec(rec);else await deleteLog(l);renderLog()});act.appendChild(xb)}
 tr.appendChild(act);tb.appendChild(tr)})}
 function openManual(l){const rec={driver:l.driver,branch:l.branch,source:l.source||"แก้ไขเอง",key:l.key,rowNumber:l.row,manual:true,
 manualOrig:(l.startRaw||"-")+" – "+(l.endRaw||"-"),start:null,end:null};
