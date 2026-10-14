@@ -94,7 +94,7 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 <div class="controls"><select id="logType"><option value="invalid">วันที่/เวลาไม่ถูกต้อง</option><option value="missing">ไม่มีคู่เวลาเริ่ม/จบ</option><option value="incomplete">คู่เวลาไม่ครบ</option><option value="nodriver">ไม่มีชื่อ พขร.</option><option value="all">ทุกประเภท</option><option value="deleted">รายการที่ลบแล้ว</option></select>
 <input id="logSearch" placeholder="ค้นหาชื่อ พขร. หรือเลขแถว" autocomplete="off">
 <button type="button" id="logDownload" class="outline">ดาวน์โหลด CSV</button><span id="logInfo"></span></div>
-<div class="wrap"><table><thead><tr><th>แถวในชีต</th><th>พขร.</th><th>สาขา</th><th>Date (ค่าเดิม)</th><th>แหล่งเวลา</th><th>เวลาเริ่ม (ค่าเดิม)</th><th>เวลาจบ (ค่าเดิม)</th><th>สาเหตุ</th><th>จัดการ</th></tr></thead>
+<div class="wrap"><table><thead><tr><th>แถวในชีต</th><th>พขร.</th><th>Date (ค่าเดิม)</th><th>เวลาเริ่ม (ค่าเดิม)</th><th>เวลาจบ (ค่าเดิม)</th><th>สาเหตุ</th><th>จัดการ</th></tr></thead>
 <tbody id="logRows"></tbody></table></div>
 <div class="actions"><button type="button" id="logClose">ปิด</button></div></dialog>
 </div>
@@ -362,11 +362,11 @@ const fixedRows=new Set(logRows.filter(l=>l.fixed).map(l=>l.row));
 return logRows.filter(l=>!(l.type==="missing"&&fixedRows.has(l.row))&&(t==="deleted"?l.deleted:(!l.deleted&&(t==="all"||l.type===t)))&&(!q||l.driver.toLowerCase().includes(q)||String(l.row)===q))}
 function renderLog(){const tb=document.getElementById("logRows");tb.innerHTML="";const list=filteredLog();
 document.getElementById("logInfo").textContent="แสดง "+list.length+" จากทั้งหมด "+(document.getElementById("logType").value==="deleted"?logRows.filter(l=>l.deleted):logRows.filter(l=>!l.deleted)).length+" รายการ";
-if(!list.length){emptyRow(tb,9);tb.querySelector("td").textContent="ไม่พบรายการ";return}
+if(!list.length){emptyRow(tb,7);tb.querySelector("td").textContent="ไม่พบรายการ";return}
 list.forEach(l=>{const tr=document.createElement("tr"),rec=l.fixed?records.find(r=>r.manual&&r.key===l.key):null;
 const reason=rec?"แก้ไขแล้ว: "+dateText(rec.start)+" – "+dateText(rec.end):(l.deleted?"ลบแล้ว (ไม่นับเป็นงาน)":l.reason);
-[l.row,l.driver||"-",l.branch||"-",l.dateRaw||"-",l.source||"-",l.startRaw||"-",l.endRaw||"-",reason].forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;
-if(i===7)td.className=rec?"reason pass":l.type==="invalid"?"reason fail":"reason";tr.appendChild(td)});
+[l.row,l.driver||"-",l.dateRaw||"-",l.startRaw||"-",l.endRaw||"-",reason].forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;
+if(i===5)td.className=rec?"reason pass":l.type==="invalid"?"reason fail":"reason";tr.appendChild(td)});
 const act=document.createElement("td");
 if(l.deleted){const b=document.createElement("button");b.type="button";b.className="mini";b.textContent="คืนรายการ";
 b.addEventListener("click",async()=>{const dr=deletedRecs.find(r=>r.manual&&r.key===l.key);if(dr)await restoreRec(dr);else await restoreLog(l);renderLog()});act.appendChild(b)}
