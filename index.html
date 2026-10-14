@@ -118,7 +118,7 @@ const days=Math.max(1,Math.round((last-first)/864e5)+1),cyc=cycleOf(last),dim=Ma
 const RC=R.filter(r=>r.group==="COCO");
 const cars=uniq(RC.map(r=>r.car)),km=RC.reduce((a,r)=>a+r.km,0);
 const proj=km/days*dim;
-const kmT=(()=>{const bs=b?[b]:[...new Set(R.map(r=>r.branch))];let s=0;bs.forEach(x=>{const c=uniq(R.filter(r=>r.branch===x&&r.group==="COCO").map(r=>r.car));s+=(tgt("KM","COCO",x)||0)*c});return s})();
+const kmT=(()=>{const bs=b?[b]:[...new Set(R.map(r=>r.branch))];let s=0;bs.forEach(x=>{s+=(tgt("KM","COCO",x)||0)*(tgt("CAR","COCO",x)||0)});return s})();
 $("kKm").textContent=fmt(km);$("kProj").textContent=fmt(proj);$("kTgt").textContent=kmT?fmt(kmT):"No data";
 $("kDay").textContent=fmt(km/days);$("kCar").textContent=fmt(cars?km/cars:0);$("kTrip").textContent=fmt(RC.length);$("kCost").textContent=fmt(R.reduce((a,r)=>a+r.cost,0));
 $("status").textContent=`รอบ ${dm(cyc[0])} – ${dm(cyc[1])} ${cyc[1].getFullYear()+543} · ข้อมูล ${fmt(R.length)} เที่ยว · ${fmt(days)} วัน`+(bad?` · ไม่นำมารวม ${bad} แถวที่ระยะทางผิดปกติ (>${MAX_TRIP_KM} กม. หรือติดลบ)`:"")+(masterWarn?" · "+masterWarn:"");
