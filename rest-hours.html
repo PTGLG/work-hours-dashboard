@@ -176,10 +176,10 @@ let ovrNote="";
 try{await refreshOverrides()}catch(e){overrides=loadLocal();ovrNote=" | โหลดค่าที่แก้ไขจากชีตไม่สำเร็จ ("+e.message+") ใช้ค่าในเบราว์เซอร์แทน"}
 applyManual();applyOverrides();computeRest();
 updateBranches();render();
-const skipped=stats.missingDriver+stats.missingTimes+stats.invalidDates;
-message.textContent="โหลดข้อมูลสำเร็จ: "+records.length+" รายการงาน | "+restRows.length+" รอบพัก | ข้ามแถว "+skipped+" แถว | ไม่มีชื่อ "+stats.missingDriver+" | ไม่มีคู่เวลา "+stats.missingTimes+" | วันที่/เวลาไม่ถูกต้อง "+stats.invalidDates+" | คู่เวลาไม่ครบ "+stats.incompletePairs;
+const latest=records.reduce((m,r)=>(!m||r.end>m)?r.end:m,null);
+message.textContent=latest?"ข้อมูลอัปเดตถึงวันที่ "+fmtDate(latest)+" เวลา "+fmtTime(latest)+" น.":"ไม่พบข้อมูลงาน";
 if(missingHeaders.length)message.textContent+=" | ไม่พบหัวคอลัมน์บางรายการ: "+missingHeaders.join(", ");
-message.textContent+=" | แก้ไขเวลาแล้ว "+records.filter(r=>r.edited).length+" รายการ"+(API_URL?"":" | โหมดเก็บในเบราว์เซอร์ (ยังไม่ได้ตั้งค่า API_URL)")+ovrNote;
+if(ovrNote)message.textContent+=ovrNote;
 }catch(error){console.error("Dashboard error:",error);message.textContent="เกิดข้อผิดพลาด: "+error.message}
 finally{loading=false;reload.disabled=false}}
 function computeRest(){records.forEach(r=>{delete r.restMs;delete r.restStatus});
@@ -338,7 +338,7 @@ function csvCell(v){v=String(v==null?"":v);return /[",\n\r]/.test(v)?'"'+v.repla
 function downloadLog(){const list=filteredLog();
 const head=["แถวในชีต","พขร.","สาขา","Date (ค่าเดิม)","แหล่งเวลา","เวลาเริ่ม (ค่าเดิม)","เวลาจบ (ค่าเดิม)","ประเภท","สาเหตุ"];
 const lines=[head].concat(list.map(l=>[l.row,l.driver,l.branch,l.dateRaw,l.source,l.startRaw,l.endRaw,LOG_TYPES[l.type],l.reason]));
-const csv="﻿"+lines.map(r=>r.map(csvCell).join(",")).join("\r\n");
+const csv="\uFEFF"+lines.map(r=>r.map(csvCell).join(",")).join("\r\n");
 const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
 a.download="log-ข้อมูลที่มีปัญหา.csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 document.getElementById("viewLog").addEventListener("click",()=>{renderLog();document.getElementById("logDlg").showModal()});
