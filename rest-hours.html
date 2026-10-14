@@ -44,7 +44,8 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 #editErr{min-height:18px;font-size:12.5px;margin-bottom:6px}
 .dt{display:flex;gap:8px}.dt input{width:auto;min-width:0;margin-top:5px}.dt input:first-child{flex:3}.dt input:last-child{flex:2}
 .outline{border:1px solid var(--g7)}
-#listDlg,#delDlg{width:min(980px,95vw)}#listDlg .wrap,#delDlg .wrap{max-height:55vh;margin-bottom:12px}
+#listDlg,#delDlg,#ongoDlg{width:min(980px,95vw)}#listDlg .wrap,#delDlg .wrap,#ongoDlg .wrap{max-height:55vh;margin-bottom:12px}
+.wn{color:#b45309;font-weight:700}
 #logDlg{width:min(1100px,96vw)}#logDlg .wrap{max-height:55vh;margin-bottom:12px}#logDlg .controls{margin-bottom:10px;align-items:center}
 #logDlg input{width:230px;margin-top:0}#logDlg td.reason{white-space:normal;min-width:260px}#logInfo{color:var(--mut);font-size:12.5px}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}}
@@ -70,6 +71,7 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 <select id="workStatus"><option value="all">ชั่วโมงทำงาน: ทั้งหมด</option><option value="over">เกิน 14 ชม.</option><option value="ok">ไม่เกิน 14 ชม.</option></select>
 <select id="status"><option value="all">เวลาพัก: ทั้งหมด</option><option value="ผ่าน">พักผ่าน</option><option value="ไม่ผ่าน">พักไม่ผ่าน</option></select>
 <select id="sortWork"><option value="default">เรียงลำดับ: ตามชื่อ/เวลา</option><option value="desc">ชั่วโมงทำงาน มาก → น้อย</option><option value="asc">ชั่วโมงทำงาน น้อย → มาก</option></select>
+<button type="button" id="viewOngoing" class="outline">งานที่ยังไม่จบ (<span id="ongoingCount">0</span>)</button>
 <button type="button" id="viewEdited" class="outline">ดูรายการที่แก้ไข (<span id="editedCount">0</span>)</button>
 <button type="button" id="viewDeleted" class="outline">ดูรายการที่ลบ (<span id="delCount">0</span>)</button>
 <button type="button" id="viewLog" class="outline">Log วันที่/เวลาไม่ถูกต้อง (<span id="logCount">0</span>)</button></div>
@@ -86,12 +88,16 @@ dialog button.primary{background:var(--g8);color:#fff;border-color:var(--g8)}dia
 <div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เวลาเดิม</th><th>เวลาที่แก้ไข</th><th>ชั่วโมงทำงานใหม่</th><th>จัดการ</th></tr></thead>
 <tbody id="editedRows"></tbody></table></div>
 <div class="actions"><button type="button" id="listClose">ปิด</button></div></dialog>
+<dialog id="ongoDlg"><h3>งานที่ยังไม่จบ</h3><p>งานที่มีเวลาเริ่มแต่ยังไม่มีเวลาจบ (เริ่มภายใน 24 ชั่วโมงที่ผ่านมา) ยังไม่ถือเป็นข้อมูลผิดและไม่นับในตัวเลขสรุป เวลาที่ทำงานมาแล้วนับจากเวลาปัจจุบัน</p>
+<div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เริ่มงาน</th><th>ทำงานมาแล้ว</th><th>สถานะ</th><th>พักก่อนเริ่มงาน</th><th>สถานะพัก</th></tr></thead>
+<tbody id="ongoRows"></tbody></table></div>
+<div class="actions"><button type="button" id="ongoClose">ปิด</button></div></dialog>
 <dialog id="delDlg"><h3>รายการที่ลบ</h3><p>รายการเหล่านี้ไม่ถูกนำมาคำนวณ (เช่น รูดบัตรเฉยๆ ไม่ได้วิ่งงานจริง) กด "คืนรายการ" เพื่อนำกลับมาคำนวณ</p>
 <div class="wrap"><table><thead><tr><th>พขร.</th><th>สาขา</th><th>แหล่งเวลา</th><th>เริ่มงาน</th><th>จบงาน</th><th>ชั่วโมงทำงาน</th><th>จัดการ</th></tr></thead>
 <tbody id="delRows"></tbody></table></div>
 <div class="actions"><button type="button" id="delClose">ปิด</button></div></dialog>
 <dialog id="logDlg"><h3>Log ข้อมูลที่ถูกข้าม</h3><p>ดูว่าแถวไหนในชีตไม่ถูกนำมาคำนวณ และเพราะอะไร "แถวในชีต" คือเลขแถวใน Google Sheets (แถวที่ 1 คือหัวตาราง) ส่วนค่าที่แสดงเป็นค่าเดิมตามที่อ่านได้จากชีต</p>
-<div class="controls"><select id="logType"><option value="invalid">วันที่/เวลาไม่ถูกต้อง</option><option value="missing">ไม่มีคู่เวลาเริ่ม/จบ</option><option value="incomplete">คู่เวลาไม่ครบ</option><option value="nodriver">ไม่มีชื่อ พขร.</option><option value="all">ทุกประเภท</option><option value="deleted">รายการที่ลบแล้ว</option></select>
+<div class="controls"><select id="logType"><option value="invalid">วันที่/เวลาไม่ถูกต้อง</option><option value="missing">ไม่มีคู่เวลาเริ่ม/จบ</option><option value="incomplete">คู่เวลาไม่ครบ</option><option value="nodriver">ไม่มีชื่อ พขร.</option><option value="all">ทุกประเภท</option><option value="fixed">แก้ไขแล้ว</option><option value="deleted">รายการที่ลบแล้ว</option></select>
 <input id="logSearch" placeholder="ค้นหาชื่อ พขร. หรือเลขแถว" autocomplete="off">
 <button type="button" id="logDownload" class="outline">ดาวน์โหลด CSV</button><span id="logInfo"></span></div>
 <div class="wrap"><table><thead><tr><th>แถวในชีต</th><th>พขร.</th><th>Date (ค่าเดิม)</th><th>เวลาเริ่ม (ค่าเดิม)</th><th>เวลาจบ (ค่าเดิม)</th><th>สาเหตุ</th><th>จัดการ</th></tr></thead>
@@ -106,7 +112,7 @@ selectedStart:["เวลาเริ่มที่เลือก"],selectedEn
 famulaStart:["เริ่ม Famula","เริ่มงาน Famula"],famulaEnd:["จบ Famula","จบงาน Famula"]};
 const REST_LIMIT_MS=10*3600*1000;
 const WORK_LIMIT_MS=14*3600*1000;
-let records=[],restRows=[],logRows=[],deletedRecs=[],loading=false;
+let records=[],restRows=[],logRows=[],deletedRecs=[],ongoingRows=[],loading=false;
 function parseCSV(text){const rows=[],nums=[];let row=[],cell="",quoted=false,rowNo=1;text=text.replace(/^\uFEFF/,"");
 for(let i=0;i<text.length;i++){const c=text[i],next=text[i+1];
 if(c==='"'&&quoted&&next==='"'){cell+='"';i++}else if(c==='"')quoted=!quoted;
@@ -140,18 +146,19 @@ return new Date(d.getFullYear(),d.getMonth(),d.getDate(),t.hour,t.minute,t.secon
 function whyBad(dateRaw,raw){
 if(parseTime(raw)&&!parseDate(dateRaw))return"ช่อง Date ว่างหรืออ่านไม่ได้";
 return"อ่านค่าไม่ได้ (รูปแบบวันที่/เวลาไม่ถูกต้อง)"}
+function isOngoing(st){const d=Date.now()-st.getTime();return d>=-5*60000&&d<=24*3600000}
 function buildRecords(row,cols,rowNumber,stats){
 const driver=getValue(row,cols,HEADERS.driver),branch=getValue(row,cols,HEADERS.branch),dateRaw=getValue(row,cols,HEADERS.date);
 const addLog=(type,reason,source,startRaw,endRaw)=>stats.log.push({row:rowNumber,type,driver,branch,dateRaw,source:source||"",startRaw:startRaw||"",endRaw:endRaw||"",reason,
 key:(type==="invalid"||type==="incomplete")?["x",driver,source||"",dateRaw,startRaw||"",endRaw||""].join("|"):""});
 if(!driver){stats.missingDriver++;addLog("nodriver","ไม่มีชื่อ พขร.");return[]}
-const ss=getValue(row,cols,HEADERS.selectedStart),se=getValue(row,cols,HEADERS.selectedEnd),pairs=[];
+const ss=getValue(row,cols,HEADERS.selectedStart),se=getValue(row,cols,HEADERS.selectedEnd),pairs=[];let ongoingFound=false;
 if(ss&&se)pairs.push({label:"เวลาที่เลือก",startRaw:ss,endRaw:se});
 else{[{label:"GH",startRaw:getValue(row,cols,HEADERS.ghStart),endRaw:getValue(row,cols,HEADERS.ghEnd)},
 {label:"SW",startRaw:getValue(row,cols,HEADERS.swStart),endRaw:getValue(row,cols,HEADERS.swEnd)},
 {label:"Famula",startRaw:getValue(row,cols,HEADERS.famulaStart),endRaw:getValue(row,cols,HEADERS.famulaEnd)}]
-.forEach(p=>{if(p.startRaw&&p.endRaw)pairs.push(p);else if(p.startRaw||p.endRaw){stats.incompletePairs++;addLog("incomplete","มีแค่เวลา"+(p.startRaw?"เริ่ม":"จบ")+" ไม่มีอีกฝั่ง",p.label,p.startRaw,p.endRaw)}})}
-if(!pairs.length){stats.missingTimes++;addLog("missing","ไม่มีคู่เวลาเริ่ม/จบ");return[]}
+.forEach(p=>{if(p.startRaw&&p.endRaw)pairs.push(p);else if(p.startRaw||p.endRaw){const st=p.startRaw&&!p.endRaw?combineDateTime(dateRaw,p.startRaw):null;if(st&&isOngoing(st)){ongoingFound=true;stats.ongoing.push({driver,branch,source:p.label,start:st,rowNumber});return}stats.incompletePairs++;addLog("incomplete","มีแค่เวลา"+(p.startRaw?"เริ่ม":"จบ")+" ไม่มีอีกฝั่ง",p.label,p.startRaw,p.endRaw)}})}
+if(!pairs.length){if(!ongoingFound){stats.missingTimes++;addLog("missing","ไม่มีคู่เวลาเริ่ม/จบ")}return[]}
 const result=[];
 pairs.forEach(p=>{const start=combineDateTime(dateRaw,p.startRaw);let end=combineDateTime(dateRaw,p.endRaw);
 if(!start||!end){stats.invalidDates++;
@@ -174,9 +181,9 @@ const columns=getColumnMap(data[0]);
 const required=[{name:"ชื่อ พขร",aliases:HEADERS.driver},{name:"Date",aliases:HEADERS.date},{name:"สาขา",aliases:HEADERS.branch}];
 const missingHeaders=required.filter(it=>!it.aliases.some(a=>columns.has(normalizeHeader(a)))).map(it=>it.name);
 if(missingHeaders.includes("ชื่อ พขร"))throw new Error("ไม่พบหัวคอลัมน์ชื่อ พขร กรุณาตรวจสอบชื่อหัวตาราง");
-const stats={missingDriver:0,missingTimes:0,incompletePairs:0,invalidDates:0,log:[]},nr=[];
+const stats={missingDriver:0,missingTimes:0,incompletePairs:0,invalidDates:0,log:[],ongoing:[]},nr=[];
 data.slice(1).forEach((row,i)=>nr.push(...buildRecords(row,columns,data.nums?data.nums[i+1]:i+2,stats)));
-logRows=stats.log;
+logRows=stats.log;ongoingRows=stats.ongoing;
 records=nr;
 records.forEach(r=>{r.origStart=r.start;r.origEnd=r.end;r.key=[r.driver,r.source,r.origStart.getTime(),r.origEnd.getTime()].join("|")});
 let ovrNote="";
@@ -187,8 +194,9 @@ deletedRecs.forEach(r=>{if(r.manual){const l=logRows.find(x=>x.key===r.key);if(l
 logRows.forEach(l=>{if(l.key&&overrides[DEL+l.key])l.deleted=true});
 computeRest();
 updateBranches();render();
-const latest=records.reduce((m,r)=>(!m||r.end>m)?r.end:m,null);
+const latest=[...records.map(r=>r.end),...ongoingRows.map(o=>o.start)].reduce((m,d)=>(!m||d>m)?d:m,null);
 message.textContent=latest?"ข้อมูลอัปเดตถึงวันที่ "+fmtDate(latest)+" เวลา "+fmtTime(latest)+" น.":"ไม่พบข้อมูลงาน";
+if(ongoingRows.length)message.textContent+=" | ยังไม่จบงาน "+ongoingRows.length+" รายการ";
 if(missingHeaders.length)message.textContent+=" | ไม่พบหัวคอลัมน์บางรายการ: "+missingHeaders.join(", ");
 if(ovrNote)message.textContent+=ovrNote;
 }catch(error){console.error("Dashboard error:",error);message.textContent="เกิดข้อผิดพลาด: "+error.message}
@@ -260,6 +268,22 @@ try{await persistOverride({key:DEL+r.key,driver:r.driver,source:r.source},{start
 const ix=records.indexOf(r);if(ix>=0)records.splice(ix,1);deletedRecs.push(r);
 if(r.manual){const l=logRows.find(x=>x.key===r.key);if(l){l.fixed=false;l.deleted=true}}
 computeRest();render();if(document.getElementById("logDlg").open)renderLog()}
+function renderOngoing(){const tb=document.getElementById("ongoRows");tb.innerHTML="";const now=Date.now();
+const list=ongoingRows.map(o=>{const prev=records.filter(r=>r.driver===o.driver&&r.end<=o.start).reduce((m,r)=>(!m||r.end>m.end)?r:m,null);
+return{o,el:now-o.start.getTime(),rest:prev?o.start-prev.end:null}}).sort((a,b)=>b.el-a.el);
+if(!list.length){emptyRow(tb,8);tb.querySelector("td").textContent="ไม่มีงานที่ยังไม่จบ";return}
+list.forEach(({o,el,rest})=>{const tr=document.createElement("tr"),over=el>WORK_LIMIT_MS;
+const st=over?"ยังไม่จบงาน · เกิน 14 ชม.":el>=12*3600000?"ยังไม่จบงาน · ใกล้ครบ 14 ชม.":"ยังไม่จบงาน";
+const rs=rest==null?"-":rest>=REST_LIMIT_MS?"ผ่าน":"ไม่ผ่าน";
+[o.driver,o.branch||"-",o.source,dateText(o.start),duration(Math.max(el,0)),st,rest==null?"-":duration(rest),rs].forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;
+if(i===5)td.className=over?"fail":"wn";
+if(i===7&&rest!=null)td.className=rs==="ผ่าน"?"pass":"fail";
+tr.appendChild(td)});tb.appendChild(tr)})}
+let ongoTimer=null;
+document.getElementById("viewOngoing").addEventListener("click",()=>{renderOngoing();document.getElementById("ongoDlg").showModal();clearInterval(ongoTimer);ongoTimer=setInterval(renderOngoing,60000)});
+document.getElementById("ongoClose").addEventListener("click",()=>document.getElementById("ongoDlg").close());
+document.getElementById("ongoDlg").addEventListener("close",()=>clearInterval(ongoTimer));
+setInterval(()=>{if(loading||document.querySelector("dialog[open]"))return;loadData()},5*60000);
 async function deleteLog(l){
 if(!confirm("ลบรายการนี้ออกจาก Log?\n"+(l.driver||"-")+" · แถวที่ "+l.row+"\n(กู้คืนได้ที่ตัวกรอง \"รายการที่ลบแล้ว\" ใน Log)"))return;
 try{await persistOverride({key:DEL+l.key,driver:l.driver,source:l.source},{start:1,end:2})}catch(ex){alert("ลบไม่สำเร็จ: "+ex.message);return}
@@ -314,6 +338,7 @@ document.getElementById("avgWork").textContent=records.length?(avgW/3600000).toF
 document.getElementById("avgRest").textContent=restRows.length?(avgR/3600000).toFixed(1)+" ชม.":"-";
 document.getElementById("editedCount").textContent=records.filter(r=>r.edited).length;
 document.getElementById("delCount").textContent=deletedRecs.length;
+document.getElementById("ongoingCount").textContent=ongoingRows.length;
 document.getElementById("logCount").textContent=logRows.filter(l=>l.type==="invalid"&&!l.fixed&&!l.deleted).length;
 const works=records.filter(r=>{const over=(r.end-r.start)>WORK_LIMIT_MS;
 return r.driver.toLowerCase().includes(search)&&(branch==="all"||r.branch===branch)
@@ -359,9 +384,9 @@ document.getElementById("branch").addEventListener("change",render);
 const LOG_TYPES={invalid:"วันที่/เวลาไม่ถูกต้อง",missing:"ไม่มีคู่เวลาเริ่ม/จบ",incomplete:"คู่เวลาไม่ครบ",nodriver:"ไม่มีชื่อ พขร."};
 function filteredLog(){const t=document.getElementById("logType").value,q=document.getElementById("logSearch").value.trim().toLowerCase();
 const fixedRows=new Set(logRows.filter(l=>l.fixed).map(l=>l.row));
-return logRows.filter(l=>!(l.type==="missing"&&fixedRows.has(l.row))&&(t==="deleted"?l.deleted:(!l.deleted&&(t==="all"||l.type===t)))&&(!q||l.driver.toLowerCase().includes(q)||String(l.row)===q))}
+return logRows.filter(l=>!(l.type==="missing"&&fixedRows.has(l.row))&&(t==="deleted"?l.deleted:t==="fixed"?l.fixed:(!l.deleted&&!l.fixed&&(t==="all"||l.type===t)))&&(!q||l.driver.toLowerCase().includes(q)||String(l.row)===q))}
 function renderLog(){const tb=document.getElementById("logRows");tb.innerHTML="";const list=filteredLog();
-document.getElementById("logInfo").textContent="แสดง "+list.length+" จากทั้งหมด "+(document.getElementById("logType").value==="deleted"?logRows.filter(l=>l.deleted):logRows.filter(l=>!l.deleted)).length+" รายการ";
+document.getElementById("logInfo").textContent="แสดง "+list.length+" จากทั้งหมด "+(()=>{const v=document.getElementById("logType").value;return(v==="deleted"?logRows.filter(l=>l.deleted):v==="fixed"?logRows.filter(l=>l.fixed):logRows.filter(l=>!l.deleted&&!l.fixed)).length})()+" รายการ";
 if(!list.length){emptyRow(tb,7);tb.querySelector("td").textContent="ไม่พบรายการ";return}
 list.forEach(l=>{const tr=document.createElement("tr"),rec=l.fixed?records.find(r=>r.manual&&r.key===l.key):null;
 const reason=rec?"แก้ไขแล้ว: "+dateText(rec.start)+" – "+dateText(rec.end):(l.deleted?"ลบแล้ว (ไม่นับเป็นงาน)":l.reason);
