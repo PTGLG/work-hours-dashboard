@@ -49,15 +49,15 @@ th:first-child,td:first-child,td.l,th.l{text-align:left}
 <div class="page">
 <div id="status" class="warn">กำลังโหลด...</div>
 <div class="cards">
-<div class="k"><small>ระยะทางรวม : กม.</small><b id="kKm">-</b></div>
-<div class="k es"><small>ประมาณการสิ้นเดือน : กม.</small><b id="kProj">-</b></div>
-<div class="k tg"><small>เป้าระยะทาง : กม.</small><b id="kTgt">-</b></div>
-<div class="k"><small>ระยะทาง/วัน : กม.</small><b id="kDay">-</b></div>
-<div class="k"><small>ระยะทาง/คัน : กม.</small><b id="kCar">-</b></div>
-<div class="k"><small>เที่ยวรวม</small><b id="kTrip">-</b></div>
+<div class="k"><small>ระยะทางรวม COCO : กม.</small><b id="kKm">-</b></div>
+<div class="k es"><small>ประมาณการสิ้นเดือน COCO : กม.</small><b id="kProj">-</b></div>
+<div class="k tg"><small>เป้าระยะทาง COCO : กม.</small><b id="kTgt">-</b></div>
+<div class="k"><small>ระยะทาง/วัน COCO : กม.</small><b id="kDay">-</b></div>
+<div class="k"><small>ระยะทาง/คัน COCO : กม.</small><b id="kCar">-</b></div>
+<div class="k"><small>เที่ยวรวม COCO</small><b id="kTrip">-</b></div>
 <div class="k"><small>ค่าใช้จ่ายรวม : บาท</small><b id="kCost">-</b></div>
 </div>
-<div class="box"><h2>ระยะทางวิ่งงานประจำวัน : กิโลเมตร (เส้นประ = Target/วัน)</h2><svg id="chart"></svg></div>
+<div class="box"><h2>ระยะทางวิ่งงานประจำวัน COCO : กิโลเมตร (เส้นประ = Target/วัน)</h2><svg id="chart"></svg></div>
 <div class="grid2">
 <div class="box"><h2>อัตรากำลังคนและรถขนส่ง เทียบ Target</h2><div class="wrap"><table id="tCrew"></table></div><h2 style="margin-top:18px">LOCO แยกสาขา</h2><div class="wrap"><table id="tLoco"></table></div></div>
 <div class="box"><h2>จำนวนรถต่อวัน (LOCO) เทียบ Target</h2><svg id="cLocoCar" style="width:100%;height:210px"></svg><h2 style="margin-top:18px">จำนวนคนต่อวัน (LOCO) เทียบ Target</h2><svg id="cLocoPer" style="width:100%;height:210px"></svg></div>
@@ -115,13 +115,14 @@ function render(){const R=sel(),b=$("branch").value;
 const f=$("from").value,t=$("to").value;if(!R.length){$("status").textContent="ไม่พบข้อมูลในช่วงที่เลือก";return}
 const ds=R.map(r=>r.k).sort(),first=pdate(f||ds[0]),last=pdate(ds[ds.length-1]);
 const days=Math.max(1,Math.round((last-first)/864e5)+1),cyc=cycleOf(last),dim=Math.round((cyc[1]-cyc[0])/864e5)+1;
-const cars=uniq(R.map(r=>r.car)),km=R.reduce((a,r)=>a+r.km,0);
+const RC=R.filter(r=>r.group==="COCO");
+const cars=uniq(RC.map(r=>r.car)),km=RC.reduce((a,r)=>a+r.km,0);
 const proj=km/days*dim;
 const kmT=(()=>{const bs=b?[b]:[...new Set(R.map(r=>r.branch))];let s=0;bs.forEach(x=>{const c=uniq(R.filter(r=>r.branch===x&&r.group==="COCO").map(r=>r.car));s+=(tgt("KM","COCO",x)||0)*c});return s})();
 $("kKm").textContent=fmt(km);$("kProj").textContent=fmt(proj);$("kTgt").textContent=kmT?fmt(kmT):"No data";
-$("kDay").textContent=fmt(km/days);$("kCar").textContent=fmt(cars?km/cars:0);$("kTrip").textContent=fmt(R.length);$("kCost").textContent=fmt(R.reduce((a,r)=>a+r.cost,0));
+$("kDay").textContent=fmt(km/days);$("kCar").textContent=fmt(cars?km/cars:0);$("kTrip").textContent=fmt(RC.length);$("kCost").textContent=fmt(R.reduce((a,r)=>a+r.cost,0));
 $("status").textContent=`รอบ ${dm(cyc[0])} – ${dm(cyc[1])} ${cyc[1].getFullYear()+543} · ข้อมูล ${fmt(R.length)} เที่ยว · ${fmt(days)} วัน`+(bad?` · ไม่นำมารวม ${bad} แถวที่ระยะทางผิดปกติ (>${MAX_TRIP_KM} กม. หรือติดลบ)`:"")+(masterWarn?" · "+masterWarn:"");
-chart(R,kmT/dim);dailyBars("cLocoCar",R,"LOCO",r=>[r.car],tgt("CAR","LOCO",b));dailyBars("cLocoPer",R,"LOCO",r=>[r.driver,r.driver2],tgt("PERSON","LOCO",b));crew(R,b);locoTable(R);carTable(R,days,dim,b);drvTable(R);costTable(R);costBars(R)}
+chart(RC,kmT/dim);dailyBars("cLocoCar",R,"LOCO",r=>[r.car],tgt("CAR","LOCO",b));dailyBars("cLocoPer",R,"LOCO",r=>[r.driver,r.driver2],tgt("PERSON","LOCO",b));crew(R,b);locoTable(R);carTable(R,days,dim,b);drvTable(R);costTable(R);costBars(R)}
 function chart(R,tline){const m=new Map();R.forEach(r=>m.set(r.k,(m.get(r.k)||0)+r.km));
 const e=[...m].sort((a,b)=>a[0]<b[0]?-1:1),W=1000,H=240,pl=50,pb=26,mx=Math.max(1,tline,...e.map(x=>x[1])),bw=(W-pl)/e.length;
 let s=`<g stroke="#dfe6e2">${[0,.5,1].map(p=>`<line x1="${pl}" x2="${W}" y1="${(H-pb)*(1-p)+8}" y2="${(H-pb)*(1-p)+8}"/>`).join("")}</g>`;
